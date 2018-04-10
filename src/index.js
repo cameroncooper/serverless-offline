@@ -341,8 +341,21 @@ class Offline {
       this.serverlessLog(`Routes for ${funName}:`);
 
       // Adds a route for each http endpoint
-      (fun.events && fun.events.length || this.serverlessLog('(none)')) && fun.events.forEach(event => {
-        if (!event.http) return this.serverlessLog('(none)');
+      if (!fun.events || !fun.events.length) fun.events = [{}];
+      fun.events.forEach(event => {
+        if (!event.http) {
+          // Add endpoint for lambda invocations
+          event.http = {
+            path: '/2015-03-31/functions/' + funName + '/invocations',
+            method: 'POST',
+            integration: 'lambda',
+            request: {
+              template: {
+                'application/json': '$input.json("$")'
+              }
+            }
+	  }
+	}
 
         // Handle Simple http setup, ex. - http: GET users/index
         if (typeof event.http === 'string') {
